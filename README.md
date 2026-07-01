@@ -31,11 +31,16 @@ Araçlar: `yargitay_ara`, `yargitay_belge_uret`, `yargitay_karar_getir`.
 
 ## Notlar
 - İstenen dava sayısından az bulunması hata değildir; özet ve arayüz farkı bildirir.
-- Site bir WAF (bot tespit sistemi) kullanıyor: çok sık/hızlı otomatik istek
-  gönderilirse geçici olarak CAPTCHA isteyebilir. Bu durumda araç anlaşılır bir
-  hata verir ("otomatik erişimi tespit edip CAPTCHA istiyor, bir süre bekleyin");
-  kod otomatik olarak geçici hatalarda birkaç kez dener ama CAPTCHA durumunda
-  boşuna tekrar denemez. Ardışık çok fazla arama yapmaktan kaçının.
+- `getDokuman` (karar indirme) sık/hızlı ardışık isteklerde HTTP 429 (Too Many
+  Requests) döndürür (gerçek API'de doğrulandı). Pipeline her indirme arasında
+  otomatik olarak bekler ve 429'da `Retry-After` header'ına uyar; yine de
+  bazen 1-2 karar atlanabilir — bu `atlanan` sayacında ve özet mesajında
+  şeffaf şekilde raporlanır, iş çökmez.
+- Site ayrıca bir WAF (bot tespit sistemi) kullanıyor: çok sık/hızlı otomatik
+  istek gönderilirse geçici olarak CAPTCHA isteyebilir. Bu durumda araç
+  anlaşılır bir hata verir ("otomatik erişimi tespit edip CAPTCHA istiyor, bir
+  süre bekleyin"); CAPTCHA durumunda boşuna tekrar denenmez. Ardışık çok fazla
+  arama yapmaktan kaçının.
 - Test: `.venv/bin/python3 -m pytest` (birim, ağsız), `.venv/bin/python3 -m pytest -m integration` (gerçek API'ye vurur).
 
 ## Doğrulanmış API detayları
