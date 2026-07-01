@@ -10,11 +10,17 @@ class YargitayError(Exception):
     pass
 
 
+class YargitayCaptchaError(YargitayError):
+    """Site otomatik erişimi tespit edip CAPTCHA istiyor; hemen tekrar
+    denemek durumu düzeltmez, bir süre beklemek gerekir."""
+    pass
+
+
 def temizle(html: str) -> str:
     soup = BeautifulSoup(html or "", "html.parser")
     for br in soup.find_all("br"):
         br.replace_with("\n")
-    text = soup.get_text()
+    text = soup.get_text().replace("\t", " ")
     # satır sonlarını normalize et, aşırı boş satırları daralt
     lines = [ln.rstrip() for ln in text.splitlines()]
     out, blank = [], 0
@@ -70,14 +76,27 @@ class YargitayClient:
 
     def ara(self, kelime, arama_tipi="genis", page_size=config.DEFAULT_PAGE_SIZE, page_number=1):
         body = config.arama_govdesi(kelime, arama_tipi, page_size, page_number)
-        r = self._istek("POST", config.BASE_URL + config.ARAMA_ENDPOINT, json=body)
-        payload = r.json()
-        if payload.get("metadata", {}).get("FMTY") != "SUCCESS":
-            mesaj = payload.get("metadata", {}).get("FMTE", "Bilinmeyen hata")
-            raise YargitayError(f"Arama hatası: {mesaj}")
-        data = payload["data"]
-        kararlar = [Karar.from_arama(x) for x in (data.get("data") or [])]
-        return {"toplam": int(data.get("recordsTotal", 0)), "kararlar": kararlar}
+        son_mesaj = "Bilinmeyen hata"
+        for deneme in range(config.MAX_RETRIES):
+            r = self._istek("POST", config.BASE_URL + config.ARAMA_ENDPOINT, json=body)
+            payload = r.json()
+            if payload.get("metadata", {}).get("FMTY") == "SUCCESS":
+                data = payload["data"]
+                kararlar = [Karar.from_arama(x) for x in (data.get("data") or [])]
+                return {"toplam": int(data.get("recordsTotal", 0)), "kararlar": kararlar}
+            son_mesaj = payload.get("metadata", {}).get("FMTE", "Bilinmeyen hata")
+            if "displaycaptcha" in son_mesaj.lower():
+                # Tekrar denemek yardımcı olmaz (WAF bot tespiti); hemen bildir.
+                raise YargitayCaptchaError(
+                    "Yargıtay sitesi otomatik erişimi tespit edip CAPTCHA istiyor. "
+                    "Bir süre bekleyip tekrar deneyin (çok sık/hızlı istek göndermekten kaçının)."
+                )
+            # WAF çerezi geçici olarak reddedilmiş olabilir (gözlemlenen ara
+            # sıra davranış); sonraki denemeden önce oturumu yeniden ısıt.
+            self._oturum_hazir = False
+            if deneme < config.MAX_RETRIES - 1:
+                time.sleep(config.REQUEST_DELAY * (2 ** deneme))
+        raise YargitayError(f"Arama hatası: {son_mesaj}")
 
     def ara_topla(self, kelime, adet, arama_tipi="genis", ilerleme_cb=None):
         # Sunucu ofseti (pageNumber-1)*pageSize ile hesaplar; sayfalar arası

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yargıtay Karar Toplayıcı</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>Yargıtay Karar Toplayıcı</h1>
+    <p class="alt">Arama kelimesi gir, kaç dava istediğini seç. Her 10 dava 1 PDF olur.</p>
+    <form id="form">
+      <label>Arama kelimesi
+        <input id="kelime" required placeholder="ör. kira tespiti">
+      </label>
+      <label>Kaç dava
+        <input id="adet" type="number" min="1" max="1000" value="10">
+      </label>
+      <fieldset>
+        <legend>Arama tipi</legend>
+        <label class="satir"><input type="radio" name="tip" value="genis" checked> Geniş arama</label>
+        <label class="satir"><input type="radio" name="tip" value="tam"> Tam ifade</label>
+      </fieldset>
+      <label>Belge başına dava
+        <input id="dava_basina" type="number" min="1" max="50" value="10">
+      </label>
+      <button type="submit" id="btn">Başlat</button>
+    </form>
+
+    <section id="ilerleme" hidden>
+      <div class="bar"><div id="dolgu"></div></div>
+      <p id="ilerleme-metin">Hazırlanıyor…</p>
+    </section>
+
+    <section id="sonuc" hidden>
+      <p id="ozet-metin"></p>
+      <ul id="belgeler"></ul>
+    </section>
+
+    <p id="hata" class="hata" hidden></p>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

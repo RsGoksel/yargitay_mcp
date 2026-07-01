@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from core.client import YargitayClient, YargitayError, temizle
+from core.client import YargitayClient, YargitayError, YargitayCaptchaError, temizle
 
 
 def _fake_session(json_payloads):
@@ -35,10 +35,21 @@ def test_ara_parse(arama_yaniti):
 
 
 def test_ara_hata_metadata():
+    # ara() en fazla MAX_RETRIES kez dener; hepsi hata dönerse YargitayError yükseltir.
     hatali = {"data": None, "metadata": {"FMTY": "ERROR", "FMTE": "Hata Oluştu!"}}
-    client = YargitayClient(session=_fake_session([hatali]))
+    client = YargitayClient(session=_fake_session([hatali, hatali, hatali]))
     with pytest.raises(YargitayError):
         client.ara("x")
+
+
+def test_ara_captcha_hemen_bildirir_tekrar_denemez():
+    # Gerçek API'de gözlemlendi: yoğun otomatik trafik CAPTCHA tetikler.
+    # Bu durumda tekrar denemek yardımcı olmaz; tek istekte özel hata verilmeli.
+    captcha = {"data": None, "metadata": {"FMTY": "ERROR", "FMTE": "Runtime exception:{0}:DisplayCaptcha"}}
+    session = _fake_session([captcha])  # sadece 1 yanıt: tekrar denenmediğini kanıtlar
+    client = YargitayClient(session=session)
+    with pytest.raises(YargitayCaptchaError):
+        client.ara("kira tespiti")
 
 
 def test_tam_ifade_tirnaklar(arama_yaniti):
