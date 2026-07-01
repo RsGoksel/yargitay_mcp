@@ -9,9 +9,21 @@ her 10 kararı 1 PDF belgesi yapar. Web arayüzü + MCP sunucusu.
     # (opsiyonel, daha kaliteli PDF): .venv/bin/pip install -r requirements-optional.txt
 
 ## Web arayüzü
-    .venv/bin/python3 -m uvicorn web.app:app --port 8477
-Tarayıcıdan http://127.0.0.1:8477 → kelime + dava sayısı gir, Başlat.
+Sunucu bu makinede (vespula-server, Tailscale IP `100.65.191.13`) çalışır; port
+rehberine göre bu projeye **Blok #11 (4200–4219)** tahsis edildi, servis **4200**'de.
+
+    nohup .venv/bin/python3 -m uvicorn web.app:app --host 0.0.0.0 --port 4200 > /tmp/yargitay_web.log 2>&1 &
+    disown
+
+Tailscale bağlı herhangi bir cihazdan: **http://100.65.191.13:4200** → kelime + dava
+sayısı gir, Başlat. (Yerelden: `http://127.0.0.1:4200`.)
 Belgeler `output/<arama>/<tarih>/belge_01.pdf …` altına yazılır.
+
+Durdurmak için: `pkill -f "uvicorn web.app"`.
+
+> Not: Şu an `nohup` ile çalışıyor, systemd servisi değil — sunucu reboot
+> olursa otomatik kalkmaz. Kalıcı olması isteniyorsa bir `systemd --user`
+> servisi tanımlanabilir (diğer projelerdeki `*.service` örnekleri gibi).
 
 ## MCP (Claude'a ekleme)
     {"mcpServers":{"yargitay":{"command":"/home/goksel/yargitay_mcp/.venv/bin/python3","args":["/home/goksel/yargitay_mcp/mcp_server.py"]}}}
