@@ -1,8 +1,16 @@
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
+import pytest
 from core.models import Karar
-from core import pipeline
+from core import pipeline, config
+
+
+@pytest.fixture(autouse=True)
+def _no_real_sleep(monkeypatch):
+    # Testler gerçek time.sleep ile bekletilmesin (birim testleri hızlı kalsın);
+    # gecikme davranışını doğrulayan test kendi casusunu ayrıca kurar.
+    monkeypatch.setattr(pipeline.time, "sleep", lambda s: None)
 
 
 def _sahte_client(toplam, adet_bulunan):
@@ -57,3 +65,16 @@ def test_atlanan_karar_cokmez(tmp_path):
     assert ozet["atlanan"] == 1
     assert ozet["toplanan"] == 4  # metni alınan
     assert ozet["belge_sayisi"] == 1
+
+
+def test_karar_indirmeleri_arasinda_gecikme_var(tmp_path, monkeypatch):
+    # Kök neden: getDokuman art arda beklemesiz çağrılınca sunucu 429 (Too Many
+    # Requests) döndürüyor (gerçek API'de doğrulandı). Her indirme arasında
+    # REQUEST_DELAY kadar beklenmeli — ara_topla()'nın sayfalar arası zaten
+    # yaptığı gibi.
+    bekletmeler = []
+    monkeypatch.setattr(pipeline.time, "sleep", lambda s: bekletmeler.append(s))
+    c = _sahte_client(toplam=3, adet_bulunan=3)
+    pipeline.collect_and_build("x", 3, dava_basina=10, output_dir=tmp_path,
+                                client=c, renderer=_SahteRenderer())
+    assert bekletmeler == [config.REQUEST_DELAY, config.REQUEST_DELAY]

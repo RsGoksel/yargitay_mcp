@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 
 from . import config
@@ -28,6 +29,11 @@ def collect_and_build(kelime, adet, arama_tipi="genis", dava_basina=None,
             atlanan += 1
         if ilerleme_cb:
             ilerleme_cb(i + 1, hedef)
+        # getDokuman art arda beklemesiz çağrılınca sunucu 429 (Too Many
+        # Requests) döndürüyor (gerçek API'de doğrulandı); indirmeler arası
+        # nazik bir bekleme şart.
+        if i < len(aday) - 1:
+            time.sleep(config.REQUEST_DELAY)
 
     gruplar = grupla(doldu, dava_basina)
     klasor = output_dir / config.slug(kelime) / config.timestamp()

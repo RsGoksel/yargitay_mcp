@@ -107,3 +107,51 @@ def test_karar_getir_temizlenmis_metin_doner(dokuman_yaniti):
     metin = client.karar_getir("1213744300")
     assert "<" not in metin
     assert len(metin) > 20
+
+
+class _SahteYanit:
+    """requests.Response yerine geçen, status_code/headers'ı kontrol
+    edilebilen minimal sahte — gerçek API'de doğrulanan 429 davranışını
+    simüle eder."""
+    def __init__(self, status_code, json_data=None, headers=None):
+        self.status_code = status_code
+        self._json = json_data or {}
+        self.headers = headers or {}
+
+    def json(self):
+        return self._json
+
+    def raise_for_status(self):
+        pass  # 429, _istek içinde raise_for_status'tan ÖNCE ele alınır
+
+
+def test_429_retry_after_header_kadar_bekler_ve_sonunda_basarili(monkeypatch, dokuman_yaniti):
+    import core.client as client_mod
+    bekletmeler = []
+    monkeypatch.setattr(client_mod.time, "sleep", lambda s: bekletmeler.append(s))
+
+    session = MagicMock()
+    session.get.side_effect = [
+        _SahteYanit(429, headers={"Retry-After": "1.5"}),
+        _SahteYanit(200, json_data=dokuman_yaniti),
+    ]
+    client = YargitayClient(session=session)
+    metin = client.karar_getir("1213744300")
+    assert len(metin) > 20
+    assert 1.5 in bekletmeler
+
+
+def test_429_header_yoksa_varsayilan_bekleme_kullanilir(monkeypatch, dokuman_yaniti):
+    import core.client as client_mod
+    from core import config
+    bekletmeler = []
+    monkeypatch.setattr(client_mod.time, "sleep", lambda s: bekletmeler.append(s))
+
+    session = MagicMock()
+    session.get.side_effect = [
+        _SahteYanit(429),  # Retry-After yok
+        _SahteYanit(200, json_data=dokuman_yaniti),
+    ]
+    client = YargitayClient(session=session)
+    client.karar_getir("1213744300")
+    assert config.RATE_LIMIT_BACKOFF in bekletmeler

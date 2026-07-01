@@ -14,6 +14,7 @@ TIMEOUT = 30
 MAX_RETRIES = 3
 CONCURRENCY = 3
 REQUEST_DELAY = 0.35
+RATE_LIMIT_BACKOFF = 2.0  # getDokuman 429 dönüp Retry-After vermediğinde beklenecek süre (sn)
 DEFAULT_PAGE_SIZE = 100
 DEFAULT_DAVA_BASINA = 10
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"

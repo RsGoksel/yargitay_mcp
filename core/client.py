@@ -67,6 +67,18 @@ class YargitayClient:
                     r = self.session.post(url, timeout=config.TIMEOUT, **kw)
                 else:
                     r = self.session.get(url, timeout=config.TIMEOUT, **kw)
+                if r.status_code == 429:
+                    # Sunucu "çok hızlı gidiyorsun" diyor (gerçek API'de
+                    # doğrulandı); genel hata backoff'undan daha uzun bekle,
+                    # varsa Retry-After'a uy.
+                    bekleme = config.RATE_LIMIT_BACKOFF
+                    try:
+                        bekleme = float(r.headers.get("Retry-After", bekleme))
+                    except (TypeError, ValueError):
+                        pass
+                    son_hata = f"429 Too Many Requests (bekleme: {bekleme}s)"
+                    time.sleep(bekleme)
+                    continue
                 r.raise_for_status()
                 return r
             except Exception as e:  # noqa: BLE001
