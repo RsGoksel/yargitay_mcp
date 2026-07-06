@@ -10,10 +10,10 @@ kurup hem web arayüzü hem MCP olarak kullanman için.
 
 ## 2. Repoyu indir
 
-    git clone <GITHUB_REPO_URL> yargitay_mcp
+    git clone https://github.com/RsGoksel/yargitay_mcp.git
     cd yargitay_mcp
 
-(GitHub linki bu konuşmanın sonunda verilecek.)
+(Repo private — klonlamak için GitHub hesabınla giriş yapmış/yetkili olman gerekir.)
 
 ## 3. Kurulum
 
