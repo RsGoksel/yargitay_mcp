@@ -13,8 +13,6 @@ kurup hem web arayüzü hem MCP olarak kullanman için.
     git clone https://github.com/RsGoksel/yargitay_mcp.git
     cd yargitay_mcp
 
-(Repo private — klonlamak için GitHub hesabınla giriş yapmış/yetkili olman gerekir.)
-
 ## 3. Kurulum
 
 Debian/Ubuntu gibi sistemlerde sistem Python'ı paket kurmayı engelleyebilir
@@ -48,8 +46,7 @@ Başlat. Üretilen PDF'ler `output/<arama>/<tarih>/belge_01.pdf …` altına yaz
 Durdurmak için terminalde `Ctrl+C`.
 
 > Port `8000` keyfi seçildi — kendi makinende port çakışması olursa `--port`
-> değerini değiştir, başka bir kısıtlama yok (port bloğu kuralı sadece
-> vespula-server'a özeldi).
+> değerini değiştir, başka bir kısıtlama yok.
 
 ## 6. MCP olarak Claude'a bağlama
 
